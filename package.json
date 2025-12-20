@@ -1,0 +1,16 @@
+{
+	"name": "testovoe",
+	"version": "1.0.0",
+	"private": true,
+	"scripts": {
+		"build:frontend": "cd frontend && npm run build",
+		"run:backend": "cd backend && npm run build && npm run start",
+		"run": "npm run build:frontend && npm run run:backend"
+	},
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"devDependencies": {
+		"@types/node": "^25.0.3"
+	}
+}

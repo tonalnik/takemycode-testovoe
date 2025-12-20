@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
+		"sourceMap": true,
+		"removeComments": true
+	},
+	"files": [],
+	"references": [{ "path": "./backend" }, { "path": "./frontend" }]
+}
