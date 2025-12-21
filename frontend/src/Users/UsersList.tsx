@@ -1,5 +1,6 @@
-import { User } from "@shared/SharedTypes";
+import type { User } from "@shared/SharedTypes";
 import { useEffect, useRef } from "react";
+import UserAtom from "./UserAtom";
 
 interface UsersAtomProps {
 	users: User[];
@@ -7,6 +8,7 @@ interface UsersAtomProps {
 	onScrollEnd?: () => void;
 	onScroll?: (scrollTop: number) => void;
 	scrollTo?: number | null;
+	userTitle?: string;
 }
 
 const UsersSkeleton = () => {
@@ -35,7 +37,7 @@ const UsersSkeleton = () => {
 };
 
 const UsersAtom = (props: UsersAtomProps) => {
-	const { users, isLoading, onScrollEnd, onScroll, scrollTo } = props;
+	const { users, isLoading, onScrollEnd, onScroll, scrollTo, userTitle } = props;
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -69,7 +71,7 @@ const UsersAtom = (props: UsersAtomProps) => {
 		}
 	}, [scrollTo]);
 
-	const isSkeleton = isLoading && users.length === 0;
+	const isSkeleton = isLoading && users?.length === 0;
 
 	return (
 		<div
@@ -82,12 +84,7 @@ const UsersAtom = (props: UsersAtomProps) => {
 			}}
 		>
 			{isSkeleton && <UsersSkeleton />}
-			{!isSkeleton &&
-				users?.map((user) => (
-					<div key={user.id}>
-						{user.id} {user.name} {user.email}
-					</div>
-				))}
+			{!isSkeleton && users?.map((user) => <UserAtom key={user.id} user={user} title={userTitle} />)}
 			{isLoading && <div style={{ padding: "10px", textAlign: "center" }}>Загрузка...</div>}
 		</div>
 	);

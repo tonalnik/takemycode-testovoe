@@ -1,11 +1,11 @@
-import { User, UsersData } from "@shared/SharedTypes";
+import type { User, UsersData } from "@shared/SharedTypes";
 import { useEffect, useRef, useState } from "react";
 import useDebounce from "../hooks/useDebounce";
 import { DEBOUNCE_DELAY, PER_PAGE } from "../logic/consts";
 import fetchApi from "../logic/fetchApi";
 import onFetchError from "../logic/onFetchError";
 import TotalUsers from "./TotalUsers";
-import UsersAtom from "./UsersAtom";
+import UsersAtom from "./UsersList";
 
 interface UserWithFilter {
 	show: boolean;
@@ -56,7 +56,12 @@ const UsersWithFilter: React.FC<UserWithFilter> = (props) => {
 	return (
 		<div>
 			<TotalUsers usersCount={users.length} totalUserCount={totalUserCount} />
-			<UsersAtom users={users} isLoading={isLoading} onScrollEnd={debouncedFetchUsersByIdSubstring} />
+			<UsersAtom
+				users={users}
+				isLoading={isLoading}
+				onScrollEnd={debouncedFetchUsersByIdSubstring}
+				userTitle={`Нажмите, чтобы добавить пользователя в список выбранных`}
+			/>
 		</div>
 	);
 };

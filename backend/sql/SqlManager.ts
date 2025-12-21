@@ -1,4 +1,4 @@
-import { UsersData } from "@shared/SharedTypes.js";
+import type { UsersData } from "@shared/SharedTypes.js";
 import mysql, { Connection } from "mysql2";
 
 export default class SqlManager {

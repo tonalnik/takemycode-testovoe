@@ -1,10 +1,10 @@
-import { User, UsersData } from "@shared/SharedTypes";
+import type { User, UsersData } from "@shared/SharedTypes";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PER_PAGE } from "../logic/consts";
 import fetchApi from "../logic/fetchApi";
 import onFetchError from "../logic/onFetchError";
 import TotalUsers from "./TotalUsers";
-import UsersAtom from "./UsersAtom";
+import UsersAtom from "./UsersList";
 
 interface UsersWithoutFilterProps {
 	show: boolean;
@@ -68,6 +68,7 @@ const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
 				onScrollEnd={fetchAllUsers}
 				onScroll={onScroll}
 				scrollTo={scrollTo}
+				userTitle={`Нажмите, чтобы добавить пользователя в список выбранных`}
 			/>
 		</div>
 	);
