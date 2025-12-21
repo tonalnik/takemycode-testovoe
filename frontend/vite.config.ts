@@ -10,7 +10,11 @@ export default defineConfig({
 		},
 	},
 	server: {
-		port: process.env.FRONTEND_PORT ? Number(process.env.FRONTEND_PORT) : 3000,
+		port: process.env.PORT ? Number(process.env.PORT) : 3000,
 		open: true,
+		sourcemapIgnoreList: false,
+	},
+	build: {
+		sourcemap: true,
 	},
 });

@@ -1,3 +1,4 @@
+import { Count } from "@shared/SharedTypes.js";
 import mysql, { Connection } from "mysql2";
 
 export default class SqlManager {
@@ -24,7 +25,7 @@ export default class SqlManager {
 				try {
 					await this.createUsersTable();
 
-					const existingCount = await this.getTotalUserCount();
+					const existingCount = (await this.getTotalUserCount()).count;
 
 					if (existingCount === 0) {
 						await this.initializeUsers(100000);
@@ -50,7 +51,7 @@ export default class SqlManager {
 
 	async getUsersByIdSubstring(idSubstring: string, page: number = 1, perPage: number = 20) {
 		const offset = (page - 1) * perPage;
-		const likePattern = `%${idSubstring}%`;
+		const likePattern = `${idSubstring}%`;
 
 		const query = `
 			SELECT * FROM users
@@ -71,10 +72,11 @@ export default class SqlManager {
 		return Array.isArray(result) && result.length > 0 ? result[0].count : 0;
 	}
 
-	async getTotalUserCount() {
+	async getTotalUserCount(): Promise<Count> {
 		const query = `SELECT COUNT(*) FROM users`;
 		const res = await this._queryPromise(query);
-		return Array.isArray(res) && res.length > 0 ? res[0]["COUNT(*)"] : 0;
+		const count = Array.isArray(res) && res.length > 0 ? res[0]["COUNT(*)"] : 0;
+		return { count };
 	}
 
 	private _queryPromiseWithParams(query: string, params: any[]): Promise<any> {

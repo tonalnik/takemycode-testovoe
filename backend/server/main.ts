@@ -22,10 +22,6 @@ const sqlManager = new SqlManager();
 if (frontendDistExists) {
 	app.use(express.static(frontendDistPath));
 
-	app.get("/api/test", (_req, res) => {
-		res.send("test");
-	});
-
 	app.get("/api/get-users", async (req, res) => {
 		const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
 		const perPage = req.query.per_page ? parseInt(req.query.per_page as string, 10) : 20;
@@ -64,7 +60,7 @@ if (frontendDistExists) {
 
 	app.get("/api/get-total-user-count", async (_req, res) => {
 		const count = await sqlManager.getTotalUserCount();
-		res.json({ count });
+		res.json(count);
 	});
 
 	// "/{*any}"

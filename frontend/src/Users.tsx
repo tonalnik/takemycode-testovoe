@@ -1,7 +1,10 @@
-import { User } from "@shared/User";
+import { Count, User } from "@shared/SharedTypes";
 import { useEffect, useRef, useState } from "react";
+import useDebounce from "./hooks/useDebounce";
+import fetchApi from "./logic/fetchApi";
 
 const PER_PAGE = 20;
+let DEBOUNCE_DELAY = 200;
 
 const Users: React.FC = () => {
 	const [users, setUsers] = useState<User[]>([]);
@@ -11,25 +14,30 @@ const Users: React.FC = () => {
 	const currentPage = useRef(1);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-	const fetchUsers = async () => {
+	const onFetchError = (error: any) => {
+		console.error("Ошибка при загрузке пользователей:", error);
+	};
+
+	const fetchAllUsers = async () => {
 		if (isLoading) return;
-
-		setIsLoading(true);
-		try {
-			const res = await fetch(`/api/get-users?page=${currentPage.current}&per_page=${PER_PAGE}`);
-			if (!res.ok) return;
-
-			const data = (await res.json()) as User[];
-
-			if (data.length > 0) {
+		fetchApi<User[]>({
+			url: "/api/get-users",
+			query: {
+				page: currentPage.current.toString(),
+				per_page: PER_PAGE.toString(),
+			},
+			parseResponse: "json",
+			onStart: () => setIsLoading(true),
+			onFinally: () => setIsLoading(false),
+			onLoad: (data) => {
 				setUsers((prev) => [...prev, ...data]);
 				currentPage.current += 1;
-			}
-		} catch (error) {
-			console.error("Ошибка при загрузке пользователей:", error);
-		} finally {
-			setIsLoading(false);
-		}
+			},
+			onError: (response) => {
+				console.error("Ошибка при загрузке пользователей:", response.statusText);
+			},
+			onFetchError,
+		});
 	};
 
 	const handleScroll = () => {
@@ -37,41 +45,51 @@ const Users: React.FC = () => {
 		if (!container) return;
 
 		const { scrollTop, scrollHeight, clientHeight } = container;
-		const threshold = 100; // Загружать когда осталось 100px до конца
+		const threshold = 100;
 
 		if (scrollHeight - scrollTop - clientHeight < threshold && !isLoading) {
-			fetchUsers();
+			fetchAllUsers();
 		}
 	};
 
-	const fetchUsersByIdSubstring = async (idSubstring: string) => {
-		if (isLoading || !idSubstring) return;
+	const debouncedFetchUsersByIdSubstring = useDebounce((idSubstring: string) => {
+		if (!idSubstring) return;
 
-		setIsLoading(true);
-		try {
-			const res = await fetch(`/api/get-users-by-id-substring?id_substring=${idSubstring}&per_page=${PER_PAGE}`);
-			if (!res.ok) return;
-
-			const data = (await res.json()) as User[];
-			setUsers(data);
-			// currentPage.current += 1;
-		} catch (error) {
-			console.error("Ошибка при загрузке пользователей по подстроке в id:", error);
-		} finally {
-			setIsLoading(false);
-		}
-	};
+		fetchApi<User[]>({
+			url: "/api/get-users-by-id-substring",
+			query: {
+				id_substring: idSubstring,
+				per_page: PER_PAGE.toString(),
+			},
+			parseResponse: "json",
+			onStart: () => setIsLoading(true),
+			onFinally: () => setIsLoading(false),
+			onLoad: (data) => {
+				setUsers(data);
+			},
+			onError: (response) => {
+				console.error("Ошибка при загрузке пользователей по подстроке в id:", response.statusText);
+			},
+			onFetchError,
+		});
+	}, DEBOUNCE_DELAY);
 
 	const fetchTotalUserCount = async () => {
-		const res = await fetch(`/api/get-total-user-count`);
-		if (!res.ok) return;
-
-		const data = (await res.json()) as { count: number };
-		setTotalUserCount(data.count);
+		fetchApi<Count>({
+			url: "/api/get-total-user-count",
+			parseResponse: "json",
+			onLoad: (data) => {
+				setTotalUserCount(data.count);
+			},
+			onError: (response) => {
+				console.error("Ошибка при загрузке общего количества пользователей:", response.statusText);
+			},
+			onFetchError,
+		});
 	};
 
 	useEffect(() => {
-		fetchUsers();
+		fetchAllUsers();
 		fetchTotalUserCount();
 	}, []);
 
@@ -88,7 +106,7 @@ const Users: React.FC = () => {
 	return (
 		<div>
 			<div>Total users: {totalUserCount === null ? "Загрузка..." : totalUserCount}</div>
-			<input type="text" onChange={(e) => fetchUsersByIdSubstring(e.target.value as string)} />
+			<input type="text" onChange={(e) => debouncedFetchUsersByIdSubstring(e.target.value)} />
 			<div
 				ref={scrollContainerRef}
 				style={{ maxHeight: "300px", width: "500px", backgroundColor: "#f0f0f0", overflowY: "scroll" }}
