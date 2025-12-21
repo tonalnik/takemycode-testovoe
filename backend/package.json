@@ -6,9 +6,10 @@
 	"scripts": {
 		"dev": "tsx server/main.ts",
 		"build": "tsc",
-		"start": "node dist/server/main.js"
+		"start": "node dist/backend/server/main.js"
 	},
 	"dependencies": {
+		"dotenv": "^17.2.3",
 		"express": "^5.2.1",
 		"mysql2": "^3.16.0"
 	},
