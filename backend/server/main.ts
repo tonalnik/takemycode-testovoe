@@ -48,22 +48,6 @@ if (frontendDistExists) {
 		res.json(users);
 	});
 
-	app.get("/api/get-user-count-by-id-substring", async (req, res) => {
-		const idSubstring = req.query.id_substring as string;
-		if (!idSubstring) {
-			res.status(400).send({ error: "Id substring is required" });
-			return;
-		}
-		const count = await sqlManager.getUserCountByIdSubstring(idSubstring);
-		res.json({ count });
-	});
-
-	app.get("/api/get-total-user-count", async (_req, res) => {
-		const count = await sqlManager.getTotalUserCount();
-		res.json(count);
-	});
-
-	// "/{*any}"
 	app.get("/", (_req, res) => {
 		res.sendFile(path.join(frontendDistPath, "index.html"));
 	});

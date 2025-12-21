@@ -1,4 +1,4 @@
-import { Count } from "@shared/SharedTypes.js";
+import { UsersData } from "@shared/SharedTypes.js";
 import mysql, { Connection } from "mysql2";
 
 export default class SqlManager {
@@ -25,7 +25,7 @@ export default class SqlManager {
 				try {
 					await this.createUsersTable();
 
-					const existingCount = (await this.getTotalUserCount()).count;
+					const existingCount = await this.getTotalUserCount();
 
 					if (existingCount === 0) {
 						await this.initializeUsers(100000);
@@ -43,13 +43,15 @@ export default class SqlManager {
 		this._connection.destroy();
 	}
 
-	async getUsers(page: number = 1, perPage: number = 20) {
+	async getUsers(page: number = 1, perPage: number = 20): Promise<UsersData> {
 		const offset = (page - 1) * perPage;
-		const query = `SELECT * FROM users LIMIT ${perPage} OFFSET ${offset}`;
-		return await this._queryPromise(query);
+		const query = `SELECT * FROM users LIMIT ? OFFSET ?`;
+		const users = await this._queryPromiseWithParams(query, [perPage, offset]);
+		const totalUserCount = await this.getTotalUserCount();
+		return { users, totalUserCount };
 	}
 
-	async getUsersByIdSubstring(idSubstring: string, page: number = 1, perPage: number = 20) {
+	async getUsersByIdSubstring(idSubstring: string, page: number = 1, perPage: number = 20): Promise<UsersData> {
 		const offset = (page - 1) * perPage;
 		const likePattern = `${idSubstring}%`;
 
@@ -59,11 +61,13 @@ export default class SqlManager {
 			ORDER BY id
 			LIMIT ? OFFSET ?
 		`;
-		return await this._queryPromiseWithParams(query, [likePattern, perPage, offset]);
+		const users = await this._queryPromiseWithParams(query, [likePattern, perPage, offset]);
+		const totalUserCount = await this.getUserCountByIdSubstring(idSubstring);
+		return { users, totalUserCount };
 	}
 
 	async getUserCountByIdSubstring(idSubstring: string) {
-		const likePattern = `%${idSubstring}%`;
+		const likePattern = `${idSubstring}%`;
 		const query = `
 			SELECT COUNT(*) AS count FROM users
 			WHERE CONVERT(id, CHAR) LIKE ?
@@ -72,11 +76,10 @@ export default class SqlManager {
 		return Array.isArray(result) && result.length > 0 ? result[0].count : 0;
 	}
 
-	async getTotalUserCount(): Promise<Count> {
+	async getTotalUserCount(): Promise<number> {
 		const query = `SELECT COUNT(*) FROM users`;
 		const res = await this._queryPromise(query);
-		const count = Array.isArray(res) && res.length > 0 ? res[0]["COUNT(*)"] : 0;
-		return { count };
+		return Array.isArray(res) && res.length > 0 ? res[0]["COUNT(*)"] : 0;
 	}
 
 	private _queryPromiseWithParams(query: string, params: any[]): Promise<any> {

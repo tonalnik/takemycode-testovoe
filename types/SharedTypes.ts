@@ -9,6 +9,7 @@ export interface User {
 	updated_at: string;
 }
 
-export interface Count {
-	count: number;
+export interface UsersData {
+	users: User[];
+	totalUserCount: number;
 }

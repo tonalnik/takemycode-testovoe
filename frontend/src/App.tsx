@@ -1,5 +1,5 @@
 import React from "react";
-import Users from "./Users";
+import Users from "./Users/Users";
 
 const App: React.FC = () => {
 	return (
