@@ -5,13 +5,13 @@ import UsersWithFilter from "./UsersWithFilter";
 import UsersWithoutFilter from "./UsersWithoutFilter";
 
 const Users: React.FC = () => {
-	const { selectedUsers, setSelectedUsers } = useContext(UsersSelectorContext);
+	const { addUser } = useContext(UsersSelectorContext);
 
 	const [filterUsers, setFilterUsers] = useState("");
 	const userTitle = `Нажмите, чтобы добавить пользователя в список выбранных`;
 
 	const onUserClick = (user: User) => {
-		setSelectedUsers([...selectedUsers, user]);
+		addUser(user);
 	};
 
 	return (

@@ -4,7 +4,7 @@ import UsersList from "../UsersList";
 import { UsersSelectorContext } from "../UsersSelector";
 
 const RightListUsers: React.FC = () => {
-	const { selectedUsers: users, setSelectedUsers } = useContext(UsersSelectorContext);
+	const { selectedUsers: users, deleteUserById } = useContext(UsersSelectorContext);
 	const [filterUsers, setFilterUsers] = useState("");
 	const userTitle = `Нажмите, чтобы удалить пользователя из списка выбранных`;
 
@@ -12,8 +12,7 @@ const RightListUsers: React.FC = () => {
 		filterUsers === "" ? users : users.filter((user) => user.id.toString().startsWith(filterUsers));
 
 	const onUserClick = (user: User) => {
-		const newSelectedUsers = users.filter((u) => u.id !== user.id);
-		setSelectedUsers(newSelectedUsers);
+		deleteUserById(user.id);
 	};
 
 	return (
