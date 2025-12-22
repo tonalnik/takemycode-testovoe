@@ -1,9 +1,10 @@
 import type { User, UsersData } from "@shared/SharedTypes";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import useGetUsersWithoutSelected from "../../hooks/useGetUsersWithoutSelected";
 import { PER_PAGE } from "../../logic/consts";
 import fetchApi from "../../logic/fetchApi";
 import onFetchError from "../../logic/onFetchError";
+import { UserWithOrder } from "../UserAtom";
 import UsersList from "../UsersList";
 
 interface UsersWithoutFilterProps {
@@ -17,6 +18,11 @@ const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
 	const [totalUserCount, setTotalUserCount] = useState<number | null>(null);
 
 	const { usersWithoutSelected, totalUsersCountWithoutSelected } = useGetUsersWithoutSelected(users, totalUserCount);
+
+	const usersWithOrder = useMemo(() => {
+		if (!usersWithoutSelected) return null;
+		return usersWithoutSelected.map((user, index) => ({ ...user, order: index })) as UserWithOrder[];
+	}, [usersWithoutSelected]);
 
 	const [isLoading, setIsLoading] = useState(false);
 	const currentPage = useRef(1);
@@ -65,7 +71,7 @@ const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
 
 	return (
 		<UsersList
-			users={usersWithoutSelected}
+			users={usersWithOrder}
 			totalUserCount={totalUsersCountWithoutSelected}
 			isLoading={isLoading}
 			onScrollEnd={fetchAllUsers}

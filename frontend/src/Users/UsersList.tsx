@@ -1,10 +1,11 @@
 import type { User } from "@shared/SharedTypes";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useDrop } from "react-dnd";
 import TotalUsers from "./TotalUsers";
-import UserAtom from "./UserAtom";
+import UserAtom, { type DragItem, type UserWithOrder } from "./UserAtom";
 
 interface UsersListProps {
-	users: User[] | null;
+	users: UserWithOrder[] | null;
 	isLoading: boolean;
 	totalUserCount: number | null;
 	scrollTo?: number | null;
@@ -12,6 +13,9 @@ interface UsersListProps {
 	onScrollEnd?: () => void;
 	onScroll?: (scrollTop: number) => void;
 	onUserClick?: (user: User) => void;
+	draggable?: boolean;
+	onDrop?: (draggedOrder: number, targetOrder: number) => void;
+	listId?: string;
 }
 
 const UsersSkeleton = () => {
@@ -42,8 +46,22 @@ const UsersSkeleton = () => {
 const SCROLL_THRESHOLD = 100;
 
 const UsersList: React.FC<UsersListProps> = (props) => {
-	const { users, isLoading, totalUserCount, scrollTo, userTitle, onUserClick, onScrollEnd, onScroll } = props;
+	const {
+		users,
+		isLoading,
+		totalUserCount,
+		scrollTo,
+		userTitle,
+		onUserClick,
+		onScrollEnd,
+		onScroll,
+		draggable = false,
+		onDrop,
+		listId,
+	} = props;
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
+	const sortedUsers = users ? [...users].sort((a, b) => a.order - b.order) : null;
 
 	const onScrollContainerChange = (container: HTMLDivElement) => {
 		const { scrollTop, scrollHeight, clientHeight } = container;
@@ -85,28 +103,149 @@ const UsersList: React.FC<UsersListProps> = (props) => {
 		}
 	}, [scrollTo]);
 
-	const isSkeleton = isLoading && users === null;
-	const isEmpty = !isSkeleton && users && users.length === 0;
+	const [{ isOver, draggedItem }, drop] = useDrop(
+		() => ({
+			accept: "user",
+			canDrop: () => draggable,
+			drop: (item: DragItem, monitor) => {
+				if (!draggable || !sortedUsers) return;
 
-	const totalUsers = <TotalUsers usersCount={users?.length ?? null} totalUserCount={isEmpty ? 0 : totalUserCount} />;
+				const clientOffset = monitor.getClientOffset();
+				if (!clientOffset || !scrollContainerRef.current) return;
+
+				const container = scrollContainerRef.current;
+				const rect = container.getBoundingClientRect();
+				const y = clientOffset.y - rect.top + container.scrollTop;
+				const items = Array.from(container.children).filter((child) => child.querySelector(".user-atom"));
+
+				let targetIndex = sortedUsers.length;
+				for (let i = 0; i < items.length; i++) {
+					const itemRect = items[i].getBoundingClientRect();
+					const itemTop = itemRect.top - rect.top + container.scrollTop;
+					if (y < itemTop + itemRect.height / 2) {
+						targetIndex = i;
+						break;
+					}
+					targetIndex = i + 1;
+				}
+
+				const draggedOrder = item.order;
+				const targetOrder =
+					targetIndex < sortedUsers.length
+						? sortedUsers[targetIndex].order
+						: sortedUsers.length > 0
+						? sortedUsers[sortedUsers.length - 1].order + 1
+						: 0;
+
+				if (draggedOrder !== targetOrder) {
+					onDrop?.(draggedOrder, targetOrder);
+				}
+				setDraggedOverIndex(null);
+			},
+			hover: (item: DragItem, monitor) => {
+				if (!draggable || !sortedUsers) return;
+
+				const clientOffset = monitor.getClientOffset();
+				if (!clientOffset || !scrollContainerRef.current) return;
+
+				const container = scrollContainerRef.current;
+				const rect = container.getBoundingClientRect();
+				const y = clientOffset.y - rect.top + container.scrollTop;
+				const items = Array.from(container.children).filter((child) => child.querySelector(".user-atom"));
+
+				let index = sortedUsers.length;
+				for (let i = 0; i < items.length; i++) {
+					const itemRect = items[i].getBoundingClientRect();
+					const itemTop = itemRect.top - rect.top + container.scrollTop;
+					if (y < itemTop + itemRect.height / 2) {
+						index = i;
+						break;
+					}
+					index = i + 1;
+				}
+				setDraggedOverIndex(index);
+			},
+			collect: (monitor) => ({
+				isOver: monitor.isOver() && monitor.canDrop(),
+				draggedItem: monitor.getItem() as DragItem | null,
+			}),
+		}),
+		[draggable, sortedUsers, onDrop]
+	);
+
+	useEffect(() => {
+		if (!isOver) {
+			setDraggedOverIndex(null);
+		}
+	}, [isOver]);
+
+	const isSkeleton = isLoading && users === null;
+	const isEmpty = !isSkeleton && sortedUsers && sortedUsers.length === 0;
+
+	const totalUsers = (
+		<TotalUsers usersCount={sortedUsers?.length ?? null} totalUserCount={isEmpty ? 0 : totalUserCount} />
+	);
+
+	const dropRefCallback = useCallback(
+		(node: HTMLDivElement | null) => {
+			(scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+			drop(node);
+		},
+		[drop]
+	);
 
 	return (
 		<div>
 			{totalUsers}
 			<div
-				ref={scrollContainerRef}
+				ref={dropRefCallback}
+				data-list-id={listId}
 				style={{
 					height: "300px",
 					width: "500px",
-					backgroundColor: "#f0f0f0",
+					backgroundColor: isOver ? "#e0e0e0" : "#f0f0f0",
 					overflowY: isSkeleton ? "hidden" : "scroll",
+					position: "relative",
+					transition: "background-color 0.2s",
 				}}
 			>
 				{isSkeleton && <UsersSkeleton />}
 				{!isSkeleton &&
-					users?.map((user) => (
-						<UserAtom key={user.id} user={user} title={userTitle} onClick={() => onUserClick?.(user)} />
+					sortedUsers?.map((user, index) => (
+						<div key={`${user.id}-${user.order}`} style={{ position: "relative" }}>
+							{draggedOverIndex === index &&
+								isOver &&
+								draggedItem &&
+								draggedItem.order !== user.order && (
+									<div
+										style={{
+											position: "absolute",
+											top: 0,
+											left: 0,
+											right: 0,
+											height: "2px",
+											backgroundColor: "#007bff",
+											zIndex: 10,
+										}}
+									/>
+								)}
+							<UserAtom
+								user={user}
+								title={userTitle}
+								onClick={() => onUserClick?.(user)}
+								draggable={draggable}
+							/>
+						</div>
 					))}
+				{draggedOverIndex === (sortedUsers?.length ?? 0) && isOver && draggedItem && (
+					<div
+						style={{
+							height: "2px",
+							backgroundColor: "#007bff",
+							marginTop: "4px",
+						}}
+					/>
+				)}
 				{isLoading && <div style={{ padding: "10px", textAlign: "center" }}>Загрузка...</div>}
 			</div>
 		</div>
