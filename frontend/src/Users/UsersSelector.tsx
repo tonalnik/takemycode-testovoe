@@ -6,11 +6,13 @@ import { UserWithOrder } from "./UserAtom";
 
 export const UsersSelectorContext = createContext<{
 	selectedUsers: UserWithOrder[];
+	initSelectedUsers: (users: UserWithOrder[]) => void;
 	addUser: (user: User) => void;
 	deleteUserById: (userId: number) => void;
 	moveUser: (draggedOrder: number, targetOrder: number) => void;
 }>({
 	selectedUsers: [],
+	initSelectedUsers: () => {},
 	addUser: () => {},
 	deleteUserById: () => {},
 	moveUser: () => {},
@@ -58,8 +60,12 @@ const UsersSelector: React.FC = () => {
 		});
 	}, []);
 
+	const initSelectedUsers = useCallback((users: UserWithOrder[]) => {
+		setSelectedUsers(users);
+	}, []);
+
 	return (
-		<UsersSelectorContext.Provider value={{ selectedUsers, addUser, deleteUserById, moveUser }}>
+		<UsersSelectorContext.Provider value={{ selectedUsers, initSelectedUsers, addUser, deleteUserById, moveUser }}>
 			<div style={{ display: "flex", width: "100%", gap: "1rem" }}>
 				<LeftListUsers />
 				<RightListUsers />
