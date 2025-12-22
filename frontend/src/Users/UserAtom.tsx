@@ -3,13 +3,14 @@ import type { User } from "@shared/SharedTypes";
 interface UserAtomProps {
 	user: User;
 	title?: string;
+	onClick?: () => void;
 }
 
 const UserAtom = (props: UserAtomProps) => {
-	const { user, title } = props;
+	const { user, title, onClick } = props;
 
 	return (
-		<div className="user-atom" title={title}>
+		<div className="user-atom" title={title} onClick={onClick}>
 			{user.id} {user.name} {user.email}
 			<style>
 				{`

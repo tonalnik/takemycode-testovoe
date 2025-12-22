@@ -11,6 +11,7 @@ interface UsersListProps {
 	userTitle?: string;
 	onScrollEnd?: () => void;
 	onScroll?: (scrollTop: number) => void;
+	onUserClick?: (user: User) => void;
 }
 
 const UsersSkeleton = () => {
@@ -39,7 +40,7 @@ const UsersSkeleton = () => {
 };
 
 const UsersList: React.FC<UsersListProps> = (props) => {
-	const { users, isLoading, totalUserCount, onScrollEnd, onScroll, scrollTo, userTitle } = props;
+	const { users, isLoading, totalUserCount, scrollTo, userTitle, onUserClick, onScrollEnd, onScroll } = props;
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -90,7 +91,10 @@ const UsersList: React.FC<UsersListProps> = (props) => {
 				}}
 			>
 				{isSkeleton && <UsersSkeleton />}
-				{!isSkeleton && users?.map((user) => <UserAtom key={user.id} user={user} title={userTitle} />)}
+				{!isSkeleton &&
+					users?.map((user) => (
+						<UserAtom key={user.id} user={user} title={userTitle} onClick={() => onUserClick?.(user)} />
+					))}
 				{isLoading && <div style={{ padding: "10px", textAlign: "center" }}>Загрузка...</div>}
 			</div>
 		</div>

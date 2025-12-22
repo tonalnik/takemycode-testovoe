@@ -1,5 +1,6 @@
 import type { User, UsersData } from "@shared/SharedTypes";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import useGetUsersWithoutSelected from "../../hooks/useGetUsersWithoutSelected";
 import { PER_PAGE } from "../../logic/consts";
 import fetchApi from "../../logic/fetchApi";
 import onFetchError from "../../logic/onFetchError";
@@ -8,11 +9,14 @@ import UsersList from "../UsersList";
 interface UsersWithoutFilterProps {
 	show: boolean;
 	userTitle?: string;
+	onUserClick?: (user: User) => void;
 }
 const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
-	const { show, userTitle } = props;
+	const { show, userTitle, onUserClick } = props;
 	const [users, setUsers] = useState<User[] | null>(null);
 	const [totalUserCount, setTotalUserCount] = useState<number | null>(null);
+
+	const { usersWithoutSelected, totalUsersCountWithoutSelected } = useGetUsersWithoutSelected(users, totalUserCount);
 
 	const [isLoading, setIsLoading] = useState(false);
 	const currentPage = useRef(1);
@@ -61,13 +65,14 @@ const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
 
 	return (
 		<UsersList
-			users={users}
+			users={usersWithoutSelected}
+			totalUserCount={totalUsersCountWithoutSelected}
 			isLoading={isLoading}
-			totalUserCount={totalUserCount}
 			onScrollEnd={fetchAllUsers}
 			onScroll={onScroll}
 			scrollTo={scrollTo}
 			userTitle={userTitle}
+			onUserClick={onUserClick}
 		/>
 	);
 };

@@ -1,6 +1,7 @@
 import type { User, UsersData } from "@shared/SharedTypes";
 import { useEffect, useRef, useState } from "react";
 import useDebounce from "../../hooks/useDebounce";
+import useGetUsersWithoutSelected from "../../hooks/useGetUsersWithoutSelected";
 import { DEBOUNCE_DELAY, PER_PAGE } from "../../logic/consts";
 import fetchApi from "../../logic/fetchApi";
 import onFetchError from "../../logic/onFetchError";
@@ -10,12 +11,15 @@ interface UserWithFilter {
 	show: boolean;
 	filterUser: string;
 	userTitle?: string;
+	onUserClick?: (user: User) => void;
 }
 
 const UsersWithFilter: React.FC<UserWithFilter> = (props) => {
-	const { show, filterUser, userTitle } = props;
+	const { show, filterUser, userTitle, onUserClick } = props;
 	const [users, setUsers] = useState<User[] | null>(null);
 	const [totalUserCount, setTotalUserCount] = useState<number | null>(null);
+
+	const { usersWithoutSelected, totalUsersCountWithoutSelected } = useGetUsersWithoutSelected(users, totalUserCount);
 
 	const [isLoading, setIsLoading] = useState(true);
 	const currentPage = useRef(1);
@@ -55,11 +59,12 @@ const UsersWithFilter: React.FC<UserWithFilter> = (props) => {
 
 	return (
 		<UsersList
-			users={users}
+			users={usersWithoutSelected}
+			totalUserCount={totalUsersCountWithoutSelected}
 			isLoading={isLoading}
-			totalUserCount={totalUserCount}
 			onScrollEnd={debouncedFetchUsersByIdSubstring}
 			userTitle={userTitle}
+			onUserClick={onUserClick}
 		/>
 	);
 };
