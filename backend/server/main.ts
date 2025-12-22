@@ -1,9 +1,11 @@
+import { UserWithOrder } from "@shared/SharedTypes.js";
 import dotenv from "dotenv";
 import express from "express";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import SqlManager from "../sql/SqlManager.js";
+import SelectedUsers from "./SelectedUsers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,12 +14,15 @@ dotenv.config({ path: path.join(__dirname, "../../../../.env") });
 
 const app = express();
 
+app.use(express.json());
+
 const PORT = process.env.SERVER_PORT || process.env.PORT || 5000;
 
 const frontendDistPath = path.join(__dirname, "../../../../frontend/dist");
 const frontendDistExists = fs.existsSync(frontendDistPath);
 
 const sqlManager = new SqlManager();
+const selectedUsers = new SelectedUsers();
 
 if (frontendDistExists) {
 	app.use(express.static(frontendDistPath));
@@ -48,13 +53,30 @@ if (frontendDistExists) {
 		res.json(users);
 	});
 
-	app.post('api/update-users-order', async (req, res) => {
-		const users = req.body.users;
+	app.post("/api/update-users-order", async (req, res) => {
+		const users = req.body as UserWithOrder[];
+		const author = "hardcode_author";
+
 		if (!users) {
 			res.status(400).send({ error: "Users are required" });
 			return;
 		}
+		if (!author) {
+			res.status(400).send({ error: "Author is required" });
+			return;
+		}
+		selectedUsers.saveUsers(author, users);
 		res.json({ message: "Users order updated" });
+	});
+
+	app.get("/api/get-selected-users", async (_req, res) => {
+		const author = "hardcode_author";
+		if (!author) {
+			res.status(400).send({ error: "Author is required" });
+			return;
+		}
+		const users = selectedUsers.getUsers(author);
+		res.json(users);
 	});
 
 	app.get("/", (_req, res) => {

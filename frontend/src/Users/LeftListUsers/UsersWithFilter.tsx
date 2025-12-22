@@ -33,7 +33,7 @@ const UsersWithFilter: React.FC<UserWithFilter> = (props) => {
 		if (!filterUser) return;
 		if (totalUserCount === users?.length) return;
 
-		fetchApi<UsersData>({
+		void fetchApi<UsersData>({
 			url: "/api/get-users-by-id-substring",
 			query: {
 				id_substring: filterUser,

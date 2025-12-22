@@ -7,9 +7,12 @@ export default class SqlManager {
 
 	constructor() {
 		this._database = process.env.MYSQL_DATABASE as string;
+		this._connection = this.createConnectionWithRetry();
+	}
 
+	private createConnectionWithRetry(maxRetries: number = 10, delay: number = 2000): Connection {
 		const port = process.env.MYSQL_PORT ? parseInt(process.env.MYSQL_PORT, 10) : 3306;
-		this._connection = mysql.createConnection({
+		const connection = mysql.createConnection({
 			host: process.env.MYSQL_HOST,
 			user: process.env.MYSQL_USER,
 			database: this._database,
@@ -17,26 +20,38 @@ export default class SqlManager {
 			port,
 		});
 
-		this._connection.connect(async (err) => {
-			if (err) {
-				return console.error("Ошибка при подключении к серверу MySQL: " + err.message);
-			} else {
-				console.log("Подключение к серверу MySQL успешно установлено");
-				try {
-					await this.createUsersTable();
-
-					const existingCount = await this.getTotalUserCount();
-
-					if (existingCount === 0) {
-						await this.initializeUsers(100000);
+		let retries = 0;
+		const attemptConnect = async () => {
+			connection.connect(async (err) => {
+				if (err) {
+					retries++;
+					if (retries < maxRetries) {
+						console.log(`Попытка подключения к MySQL ${retries}/${maxRetries}...`);
+						setTimeout(attemptConnect, delay);
 					} else {
-						console.log(`В таблице уже есть ${existingCount} пользователей, инициализация пропущена`);
+						console.error("Ошибка при подключении к серверу MySQL после всех попыток: " + err.message);
 					}
-				} catch (err) {
-					console.error("Ошибка при инициализации пользователей:", err);
+				} else {
+					console.log("Подключение к серверу MySQL успешно установлено");
+					try {
+						await this.createUsersTable();
+
+						const existingCount = await this.getTotalUserCount();
+
+						if (existingCount === 0) {
+							await this.initializeUsers(100000);
+						} else {
+							console.log(`В таблице уже есть ${existingCount} пользователей, инициализация пропущена`);
+						}
+					} catch (err) {
+						console.error("Ошибка при инициализации пользователей:", err);
+					}
 				}
-			}
-		});
+			});
+		};
+
+		attemptConnect();
+		return connection;
 	}
 
 	destroy() {

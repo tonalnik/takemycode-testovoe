@@ -1,5 +1,9 @@
 import { User, UserWithOrder } from "@shared/SharedTypes";
-import { createContext, useCallback, useState } from "react";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
+import useDebounce from "../hooks/useDebounce";
+import { UPDATE_SELECTED_USERS_DELAY } from "../logic/consts";
+import fetchApi from "../logic/fetchApi";
+import onFetchError from "../logic/onFetchError";
 import LeftListUsers from "./LeftListUsers/LeftListUsers";
 import RightListUsers from "./RightListUsers/RightListUsers";
 
@@ -20,6 +24,35 @@ export const UsersSelectorContext = createContext<{
 const UsersSelector: React.FC = () => {
 	const [selectedUsers, setSelectedUsers] = useState<UserWithOrder[]>([]);
 	const [orderCounter, setOrderCounter] = useState(0);
+	const [isGetSelectedUsersLoading, setIsGetSelectedUsersLoading] = useState(false);
+	const isInitSelectedUsers = useRef<boolean | "changeOnNextRenderToFalse">(true);
+
+	const updateSelectedUsers = useDebounce((selectedUsers: UserWithOrder[]) => {
+		void fetchApi({
+			url: "/api/update-users-order",
+			init: {
+				method: "POST",
+				body: JSON.stringify(selectedUsers),
+				headers: {
+					"Content-Type": "application/json",
+				},
+			},
+			onError: (response) => {
+				console.error("Ошибка при обновлении пользователей:", response.statusText);
+			},
+			onFetchError,
+		});
+	}, UPDATE_SELECTED_USERS_DELAY);
+
+	useEffect(() => {
+		if (isInitSelectedUsers.current === true) return;
+		if (isInitSelectedUsers.current === "changeOnNextRenderToFalse") {
+			isInitSelectedUsers.current = false;
+			return;
+		}
+
+		updateSelectedUsers(selectedUsers);
+	}, [selectedUsers]);
 
 	const addUser = useCallback(
 		(user: User) => {
@@ -63,11 +96,30 @@ const UsersSelector: React.FC = () => {
 		setSelectedUsers(users);
 	}, []);
 
+	useEffect(() => {
+		void fetchApi<UserWithOrder[]>({
+			url: "/api/get-selected-users",
+			parseResponse: "json",
+			onStart: () => setIsGetSelectedUsersLoading(true),
+			onFinally: () => {
+				setIsGetSelectedUsersLoading(false);
+				isInitSelectedUsers.current = "changeOnNextRenderToFalse";
+			},
+			onLoad: (data) => {
+				initSelectedUsers(data);
+			},
+			onError: (response) => {
+				console.error("Ошибка при загрузке пользователей:", response.statusText);
+			},
+			onFetchError,
+		});
+	}, []);
+
 	return (
 		<UsersSelectorContext.Provider value={{ selectedUsers, initSelectedUsers, addUser, deleteUserById, moveUser }}>
 			<div style={{ display: "flex", width: "100%", gap: "1rem" }}>
 				<LeftListUsers />
-				<RightListUsers />
+				<RightListUsers isLoading={isGetSelectedUsersLoading} />
 			</div>
 		</UsersSelectorContext.Provider>
 	);

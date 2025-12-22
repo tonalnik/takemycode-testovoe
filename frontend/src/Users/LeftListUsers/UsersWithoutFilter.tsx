@@ -36,7 +36,7 @@ const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
 		if (isLoading) return;
 		if (totalUserCount === users?.length) return;
 
-		fetchApi<UsersData>({
+		void fetchApi<UsersData>({
 			url: "/api/get-users",
 			query: {
 				page: currentPage.current.toString(),
