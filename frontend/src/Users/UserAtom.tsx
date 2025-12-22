@@ -16,6 +16,7 @@ const UserAtom = (props: UserAtomProps) => {
 				{`
                     .user-atom {
                         cursor: pointer;
+						font-size: 20px;
                     }
                     .user-atom:hover {
                         font-weight: bold;

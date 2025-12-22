@@ -39,23 +39,35 @@ const UsersSkeleton = () => {
 	);
 };
 
+const SCROLL_THRESHOLD = 100;
+
 const UsersList: React.FC<UsersListProps> = (props) => {
 	const { users, isLoading, totalUserCount, scrollTo, userTitle, onUserClick, onScrollEnd, onScroll } = props;
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+	const onScrollContainerChange = (container: HTMLDivElement) => {
+		const { scrollTop, scrollHeight, clientHeight } = container;
+
+		if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
+			onScrollEnd?.();
+		}
+	};
+
+	useEffect(() => {
+		if (!scrollContainerRef.current || !users || isLoading) return;
+
+		const container = scrollContainerRef.current;
+		onScrollContainerChange(container);
+	}, [users, isLoading]);
+
 	useEffect(() => {
 		const handleScroll = () => {
 			const container = scrollContainerRef.current;
-			if (!container) return;
+			if (!container || isLoading) return;
 
-			const { scrollTop, scrollHeight, clientHeight } = container;
+			const { scrollTop } = container;
 			onScroll?.(scrollTop);
-
-			const THRESHOLD = 100;
-
-			if (scrollHeight - scrollTop - clientHeight < THRESHOLD && !isLoading) {
-				onScrollEnd?.();
-			}
+			onScrollContainerChange(container);
 		};
 
 		const container = scrollContainerRef.current;
