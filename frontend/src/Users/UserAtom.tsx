@@ -1,10 +1,6 @@
-import type { User } from "@shared/SharedTypes";
+import type { UserWithOrder } from "@shared/SharedTypes";
 import { useDrag } from "react-dnd";
 import DragHandleIcon from "./DragHandleIcon";
-
-export interface UserWithOrder extends User {
-	order: number;
-}
 
 export interface DragItem {
 	type: string;

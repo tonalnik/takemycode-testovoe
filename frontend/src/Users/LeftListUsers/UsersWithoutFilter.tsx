@@ -1,10 +1,9 @@
-import type { User, UsersData } from "@shared/SharedTypes";
+import type { User, UsersData, UserWithOrder } from "@shared/SharedTypes";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import useGetUsersWithoutSelected from "../../hooks/useGetUsersWithoutSelected";
 import { PER_PAGE } from "../../logic/consts";
 import fetchApi from "../../logic/fetchApi";
 import onFetchError from "../../logic/onFetchError";
-import { UserWithOrder } from "../UserAtom";
 import UsersList from "../UsersList";
 
 interface UsersWithoutFilterProps {

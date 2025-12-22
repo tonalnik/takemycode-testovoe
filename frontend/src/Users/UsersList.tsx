@@ -1,8 +1,8 @@
-import type { User } from "@shared/SharedTypes";
+import type { User, UserWithOrder } from "@shared/SharedTypes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDrop } from "react-dnd";
 import TotalUsers from "./TotalUsers";
-import UserAtom, { type DragItem, type UserWithOrder } from "./UserAtom";
+import UserAtom, { type DragItem } from "./UserAtom";
 
 interface UsersListProps {
 	users: UserWithOrder[] | null;

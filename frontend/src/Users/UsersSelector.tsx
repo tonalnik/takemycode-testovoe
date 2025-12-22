@@ -1,8 +1,7 @@
-import { User } from "@shared/SharedTypes";
+import { User, UserWithOrder } from "@shared/SharedTypes";
 import { createContext, useCallback, useState } from "react";
 import LeftListUsers from "./LeftListUsers/LeftListUsers";
 import RightListUsers from "./RightListUsers/RightListUsers";
-import { UserWithOrder } from "./UserAtom";
 
 export const UsersSelectorContext = createContext<{
 	selectedUsers: UserWithOrder[];

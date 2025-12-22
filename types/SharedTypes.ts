@@ -9,6 +9,10 @@ export interface User {
 	updated_at: string;
 }
 
+export interface UserWithOrder extends User {
+	order: number;
+}
+
 export interface UsersData {
 	users: User[];
 	totalUserCount: number;

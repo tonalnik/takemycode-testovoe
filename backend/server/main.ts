@@ -48,6 +48,15 @@ if (frontendDistExists) {
 		res.json(users);
 	});
 
+	app.post('api/update-users-order', async (req, res) => {
+		const users = req.body.users;
+		if (!users) {
+			res.status(400).send({ error: "Users are required" });
+			return;
+		}
+		res.json({ message: "Users order updated" });
+	});
+
 	app.get("/", (_req, res) => {
 		res.sendFile(path.join(frontendDistPath, "index.html"));
 	});
