@@ -1,12 +1,15 @@
 interface TotalUsersProps {
-	usersCount: number;
+	usersCount: number | null;
 	totalUserCount: number | null;
 }
 
 const TotalUsers: React.FC<TotalUsersProps> = (props) => {
 	const { usersCount, totalUserCount } = props;
 	return (
-		<div>Всего пользователей: {totalUserCount === null ? "Загрузка..." : `${usersCount} / ${totalUserCount}`}</div>
+		<div>
+			Всего пользователей:{" "}
+			{totalUserCount === null || usersCount === null ? "Загрузка..." : `${usersCount} / ${totalUserCount}`}
+		</div>
 	);
 };
 

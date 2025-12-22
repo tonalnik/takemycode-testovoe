@@ -1,14 +1,16 @@
 import type { User } from "@shared/SharedTypes";
 import { useEffect, useRef } from "react";
+import TotalUsers from "./TotalUsers";
 import UserAtom from "./UserAtom";
 
-interface UsersAtomProps {
-	users: User[];
+interface UsersListProps {
+	users: User[] | null;
 	isLoading: boolean;
-	onScrollEnd?: () => void;
-	onScroll?: (scrollTop: number) => void;
+	totalUserCount: number | null;
 	scrollTo?: number | null;
 	userTitle?: string;
+	onScrollEnd?: () => void;
+	onScroll?: (scrollTop: number) => void;
 }
 
 const UsersSkeleton = () => {
@@ -36,8 +38,8 @@ const UsersSkeleton = () => {
 	);
 };
 
-const UsersAtom = (props: UsersAtomProps) => {
-	const { users, isLoading, onScrollEnd, onScroll, scrollTo, userTitle } = props;
+const UsersList: React.FC<UsersListProps> = (props) => {
+	const { users, isLoading, totalUserCount, onScrollEnd, onScroll, scrollTo, userTitle } = props;
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -46,14 +48,13 @@ const UsersAtom = (props: UsersAtomProps) => {
 			if (!container) return;
 
 			const { scrollTop, scrollHeight, clientHeight } = container;
+			onScroll?.(scrollTop);
+
 			const THRESHOLD = 100;
 
 			if (scrollHeight - scrollTop - clientHeight < THRESHOLD && !isLoading) {
 				onScrollEnd?.();
 			}
-
-			// Вызываем callback для передачи текущей позиции скролла родителю
-			onScroll?.(scrollTop);
 		};
 
 		const container = scrollContainerRef.current;
@@ -71,23 +72,29 @@ const UsersAtom = (props: UsersAtomProps) => {
 		}
 	}, [scrollTo]);
 
-	const isSkeleton = isLoading && users?.length === 0;
+	const isSkeleton = isLoading && users === null;
+	const isEmpty = !isSkeleton && users && users.length === 0;
+
+	const totalUsers = <TotalUsers usersCount={users?.length ?? null} totalUserCount={isEmpty ? 0 : totalUserCount} />;
 
 	return (
-		<div
-			ref={scrollContainerRef}
-			style={{
-				maxHeight: "300px",
-				width: "500px",
-				backgroundColor: "#f0f0f0",
-				overflowY: isSkeleton ? "hidden" : "scroll",
-			}}
-		>
-			{isSkeleton && <UsersSkeleton />}
-			{!isSkeleton && users?.map((user) => <UserAtom key={user.id} user={user} title={userTitle} />)}
-			{isLoading && <div style={{ padding: "10px", textAlign: "center" }}>Загрузка...</div>}
+		<div>
+			{totalUsers}
+			<div
+				ref={scrollContainerRef}
+				style={{
+					height: "300px",
+					width: "500px",
+					backgroundColor: "#f0f0f0",
+					overflowY: isSkeleton ? "hidden" : "scroll",
+				}}
+			>
+				{isSkeleton && <UsersSkeleton />}
+				{!isSkeleton && users?.map((user) => <UserAtom key={user.id} user={user} title={userTitle} />)}
+				{isLoading && <div style={{ padding: "10px", textAlign: "center" }}>Загрузка...</div>}
+			</div>
 		</div>
 	);
 };
 
-export default UsersAtom;
+export default UsersList;

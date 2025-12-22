@@ -1,17 +1,17 @@
 import type { User, UsersData } from "@shared/SharedTypes";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { PER_PAGE } from "../logic/consts";
-import fetchApi from "../logic/fetchApi";
-import onFetchError from "../logic/onFetchError";
-import TotalUsers from "./TotalUsers";
-import UsersAtom from "./UsersList";
+import { PER_PAGE } from "../../logic/consts";
+import fetchApi from "../../logic/fetchApi";
+import onFetchError from "../../logic/onFetchError";
+import UsersList from "../UsersList";
 
 interface UsersWithoutFilterProps {
 	show: boolean;
+	userTitle?: string;
 }
 const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
-	const { show } = props;
-	const [users, setUsers] = useState<User[]>([]);
+	const { show, userTitle } = props;
+	const [users, setUsers] = useState<User[] | null>(null);
 	const [totalUserCount, setTotalUserCount] = useState<number | null>(null);
 
 	const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +25,7 @@ const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
 
 	const fetchAllUsers = useCallback(() => {
 		if (isLoading) return;
-		if (totalUserCount === users.length) return;
+		if (totalUserCount === users?.length) return;
 
 		fetchApi<UsersData>({
 			url: "/api/get-users",
@@ -38,7 +38,7 @@ const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
 			onFinally: () => setIsLoading(false),
 			onLoad: (data) => {
 				setTotalUserCount(data.totalUserCount);
-				setUsers((prev) => [...prev, ...data.users]);
+				setUsers((prev) => (prev ? [...prev, ...data.users] : data.users));
 				currentPage.current += 1;
 			},
 			onError: (response) => {
@@ -60,17 +60,15 @@ const UsersWithoutFilter: React.FC<UsersWithoutFilterProps> = (props) => {
 	if (!show) return null;
 
 	return (
-		<div>
-			<TotalUsers usersCount={users.length} totalUserCount={totalUserCount} />
-			<UsersAtom
-				users={users}
-				isLoading={isLoading}
-				onScrollEnd={fetchAllUsers}
-				onScroll={onScroll}
-				scrollTo={scrollTo}
-				userTitle={`Нажмите, чтобы добавить пользователя в список выбранных`}
-			/>
-		</div>
+		<UsersList
+			users={users}
+			isLoading={isLoading}
+			totalUserCount={totalUserCount}
+			onScrollEnd={fetchAllUsers}
+			onScroll={onScroll}
+			scrollTo={scrollTo}
+			userTitle={userTitle}
+		/>
 	);
 };
 

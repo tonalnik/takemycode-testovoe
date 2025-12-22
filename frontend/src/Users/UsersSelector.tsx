@@ -1,10 +1,11 @@
-import Users from "./Users";
+import LeftListUsers from "./LeftListUsers/LeftListUsers";
+import RightListUsers from "./RightListUsers/RightListUsers";
 
 const UsersSelector: React.FC = () => {
 	return (
 		<div style={{ display: "flex", width: "100%", gap: "1rem" }}>
-			<Users />
-			<Users />
+			<LeftListUsers />
+			<RightListUsers />
 		</div>
 	);
 };
