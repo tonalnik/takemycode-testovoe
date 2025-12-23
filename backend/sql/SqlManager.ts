@@ -1,61 +1,84 @@
 import type { UsersData } from "@shared/SharedTypes.js";
-import mysql, { Connection } from "mysql2";
+import mysql, { Pool } from "mysql2";
 
 export default class SqlManager {
 	private _database: string;
-	private _connection: Connection;
+	private _pool: Pool;
 
 	constructor() {
 		this._database = process.env.MYSQL_DATABASE as string;
-		this._connection = this.createConnectionWithRetry();
+		this._pool = this.createPool();
+		this.initializeDatabase();
 	}
 
-	private createConnectionWithRetry(maxRetries: number = 10, delay: number = 2000): Connection {
+	private createPool(): Pool {
 		const port = process.env.MYSQL_PORT ? parseInt(process.env.MYSQL_PORT, 10) : 3306;
-		const connection = mysql.createConnection({
+		const pool = mysql.createPool({
 			host: process.env.MYSQL_HOST,
 			user: process.env.MYSQL_USER,
 			database: this._database,
 			password: process.env.MYSQL_PASSWORD,
 			port,
+			waitForConnections: true,
+			connectionLimit: 10,
+			queueLimit: 0,
 		});
 
+		pool.on("connection", (connection) => {
+			console.log("Новое подключение к MySQL установлено (ID: " + connection.threadId + ")");
+		});
+
+		pool.on("error", (err) => {
+			console.error("Ошибка в пуле подключений MySQL:", err);
+			if (err.code === "PROTOCOL_CONNECTION_LOST") {
+				console.log("Подключение к MySQL потеряно. Пул автоматически переподключится.");
+			}
+		});
+
+		return pool;
+	}
+
+	private async initializeDatabase() {
+		const maxRetries = 10;
+		const delay = 2000;
 		let retries = 0;
-		const attemptConnect = async () => {
-			connection.connect(async (err) => {
-				if (err) {
-					retries++;
-					if (retries < maxRetries) {
-						console.log(`Попытка подключения к MySQL ${retries}/${maxRetries}...`);
-						setTimeout(attemptConnect, delay);
-					} else {
-						console.error("Ошибка при подключении к серверу MySQL после всех попыток: " + err.message);
-					}
+
+		const attemptInitialize = async () => {
+			try {
+				await this._queryPromise("SELECT 1");
+				console.log("Пул подключений к MySQL успешно инициализирован");
+
+				await this.createUsersTable();
+
+				const existingCount = await this.getTotalUserCount();
+
+				if (existingCount === 0) {
+					await this.initializeUsers(100000);
 				} else {
-					console.log("Подключение к серверу MySQL успешно установлено");
-					try {
-						await this.createUsersTable();
-
-						const existingCount = await this.getTotalUserCount();
-
-						if (existingCount === 0) {
-							await this.initializeUsers(100000);
-						} else {
-							console.log(`В таблице уже есть ${existingCount} пользователей, инициализация пропущена`);
-						}
-					} catch (err) {
-						console.error("Ошибка при инициализации пользователей:", err);
-					}
+					console.log(`В таблице уже есть ${existingCount} пользователей, инициализация пропущена`);
 				}
-			});
+			} catch (err: any) {
+				retries++;
+				if (retries < maxRetries) {
+					console.log(`Попытка инициализации MySQL ${retries}/${maxRetries}...`);
+					setTimeout(attemptInitialize, delay);
+				} else {
+					console.error("Ошибка при инициализации базы данных после всех попыток: " + err.message);
+				}
+			}
 		};
 
-		attemptConnect();
-		return connection;
+		attemptInitialize();
 	}
 
 	destroy() {
-		this._connection.destroy();
+		this._pool.end((err) => {
+			if (err) {
+				console.error("Ошибка при закрытии пула подключений:", err);
+			} else {
+				console.log("Пул подключений MySQL успешно закрыт");
+			}
+		});
 	}
 
 	async getUsers(page: number = 1, perPage: number = 20): Promise<UsersData> {
@@ -99,7 +122,7 @@ export default class SqlManager {
 
 	private _queryPromiseWithParams(query: string, params: any[]): Promise<any> {
 		return new Promise((resolve, reject) => {
-			this._connection.query(query, params, (err, results) => {
+			this._pool.query(query, params, (err, results) => {
 				if (err) {
 					reject(err);
 				} else {
@@ -111,7 +134,7 @@ export default class SqlManager {
 
 	private _queryPromise(query: string): Promise<any> {
 		return new Promise((resolve, reject) => {
-			this._connection.query(query, (err, results) => {
+			this._pool.query(query, (err, results) => {
 				if (err) {
 					reject(err);
 				} else {
