@@ -19,7 +19,7 @@ services:
             retries: 10
             start_period: 30s
     app:
-        image: test
+        image: tonalink/takemycode-testovoe:0.1.1
         restart: always
         depends_on:
             db:
